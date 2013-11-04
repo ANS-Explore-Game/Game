@@ -1,0 +1,185 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Page Title</title> 	
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head> 
+<link rel="stylesheet" href="../css/normalize.css" type="text/css">        
+    <link rel="stylesheet" href="../css/main.css" type="text/css">	
+    <style>
+	#dinorun{
+
+	width: 600px;
+	height: 400px;
+	margin: 0 auto;
+	
+	
+}
+	</style>
+<script src="../js/preloadjs-NEXT.min.js"></script>
+    	<script src="../js/easeljs-0.7.0.min.js"></script>
+	<script type="text/javascript">
+
+	var stage, w, h, loader;
+	var sky, grant, ground, hill, hill2;
+	var gravity = 9.8;
+	var jumpy = false;
+	function init() {
+	
+
+		stage = new createjs.Stage("testCanvas");
+		
+		// grab canvas width and height for later calculations:
+		w = stage.canvas.width;
+		h = stage.canvas.height;
+
+		manifest = [
+			{src:"../img/running.png", id:"grant"},
+			{src:"../img/sky.png", id:"sky"},
+			{src:"../img/ground.png", id:"ground"},
+			{src:"../img/parallaxHill1.png", id:"hill"},
+			{src:"../img/parallaxHill2.png", id:"hill2"},
+			{src:"../img/Bad.png", id:"enemy"}
+		];
+
+		loader = new createjs.LoadQueue(false);
+		loader.addEventListener("complete", handleComplete);
+		loader.loadManifest(manifest);
+	}
+
+	function handleComplete() {
+		document.getElementById("loader").className = "";
+		
+		sky = new createjs.Shape();
+		sky.graphics.beginBitmapFill(loader.getResult("sky")).drawRect(0,0,w,h);
+		
+		var groundImg = loader.getResult("ground");
+		ground = new createjs.Shape();
+		ground.graphics.beginBitmapFill(groundImg).drawRect(0, 0, w+groundImg.width, groundImg.height);
+		ground.tileW = groundImg.width;
+		ground.y = h-groundImg.height;
+		
+		hill = new createjs.Bitmap(loader.getResult("hill"));
+		hill.setTransform(Math.random() * w, h-hill.image.height*3-groundImg.height, 3, 3);
+		     
+		hill2 = new createjs.Bitmap(loader.getResult("hill2"));
+		hill2.setTransform(Math.random() * w, h-hill2.image.height*3-groundImg.height, 3, 3);
+	
+		var data = new createjs.SpriteSheet({
+			"images": [loader.getResult("grant")],
+			"frames": {"regX": 0, "height": 150, "count": 24, "regY": 0, "width": 149},
+			// define two animations, run (loops, 1.5x speed) and jump (returns to run):
+			"animations": {"run": [0, 14, "run", 1.5], "jump": [15, 23, "run"]}
+		});
+		grant = new createjs.Sprite(data, "run");
+		grant.setTransform(50, 205, 0.8, 0.8);
+		grant.framerate = 30;
+		
+			var endata = new createjs.SpriteSheet({
+			"images": [loader.getResult("enemy")],
+			"frames": {"regX": 0, "height": 53, "count": 8, "regY": 0, "width": 55},
+			// define two animations, run (loops, 1.5x speed) and jump (returns to run):
+			"animations": {"roll": [0, 7, "roll", 1.5]}
+		});
+		enemy = new createjs.Sprite(endata, "roll");
+		enemy.setTransform(350, 269, 1, 1);
+		enemy.framerate = 10;
+
+		stage.addChild(sky, hill, hill2, ground, grant, enemy);
+		stage.addEventListener("stagemousedown", handleJumpStart);
+
+		createjs.Ticker.timingMode = createjs.Ticker.RAF;
+		createjs.Ticker.addEventListener("tick", tick);
+	}
+
+	function handleJumpStart() {
+	
+	
+	if (jumpy != true){
+	jumpy = true;	
+	}
+
+		
+	}
+
+	function tick(event) {
+		var deltaS = event.delta/1000;
+		var position = grant.x+150*deltaS;
+		
+		enemy.x -= 3;
+		if(enemy.x < 0){
+		enemy.x = 600;	
+		}
+		
+		var grantW = grant.getBounds().width*grant.scaleX;
+		grant.x = (position >= w) ? -grantW : position;
+		
+		if(grant.x > 350){
+		grant.x = 350;
+	
+		}
+		if(grant.x > 100){
+			ground.x = (ground.x-deltaS*200) % ground.tileW;
+		hill.x = (hill.x - deltaS*30);
+		if (hill.x + hill.image.width*hill.scaleX <= 0) { hill.x = w; }
+		hill2.x = (hill2.x - deltaS*45);
+		if (hill2.x + hill2.image.width*hill2.scaleX <= 0) { hill2.x = w; }
+		}
+		// if collision grant.x -= 10
+		
+		
+		grant.y += gravity;
+	console.log(grant.y);
+	if(grant.y > 205){
+	gravity = 0;
+	grant.y = 205;	
+	}
+		if (jumpy){
+	grant.y -= 1;
+	gravity = -9.8;	
+	  grant.gotoAndPlay("jump");;
+
+	}
+	if (grant.y < 100){
+		gravity = 9.8;
+		jumpy = false ;
+	}
+	
+		stage.update(event);
+	}
+	</script>
+<body onload="init();">
+
+<div data-role="page" id="dinorun" data-script="template">
+
+	<div data-role="header" class="page-header EaselJS" >
+		<!-- universal back button.  must be on all pages -->
+		<input Type="button" class="backBtn" onClick="goBack()" />
+		<!-- page title -->
+		<h3>Dino Run</h3>
+		<!-- page icon corresponds to class seciton on main.css-->
+		<!-- <div class="page-logo collect-white"></div> -->
+		<input type="button" class="page-logo help-white" onClick="showHelp();" />
+
+	</div><!-- /header -->
+
+	<div data-role="content">	
+	<div id="loader" class="loader"></div>
+
+
+	
+	
+
+	<div class="canvasHolder">
+		<canvas id="testCanvas" width="600" height="400"></canvas>
+   
+	</div>
+    
+    <p> Click on canvas to Jump</p>	
+	</div><!-- /content -->
+
+	
+</div><!-- /page -->
+
+</body>
+</html>
